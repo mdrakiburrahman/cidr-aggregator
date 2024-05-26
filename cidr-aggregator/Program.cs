@@ -1,18 +1,56 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 
 class Program
 {
-    static void Main()
+    static void Main(string[] args)
     {
-        List<string> cidrs = new List<string> { "213.199.180.192/27", "213.199.183.0/24" };
+        if (args.Length != 1)
+        {
+            Console.WriteLine("Please pass in an argument where you have a file containing newline delimited valid CIDR ranges.");
+            return;
+        }
+
+        string filePath = args[0];
+        List<string> cidrs;
+        try
+        {
+            cidrs = ReadCidrFile(filePath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error reading CIDR file: {ex.Message}");
+            return;
+        }
 
         string aggregatedCidr = AggregateCIDRs(cidrs);
 
         Console.WriteLine("Aggregated CIDR:");
         Console.WriteLine(aggregatedCidr);
+    }
+
+    static List<string> ReadCidrFile(string filePath)
+    {
+        var cidrs = new List<string>();
+        foreach (var line in File.ReadLines(filePath))
+        {
+            string cidr = line.Trim();
+            if (!IsValidCidr(cidr)) throw new FormatException($"Invalid CIDR format: {cidr}");
+            cidrs.Add(cidr);
+        }
+        return cidrs;
+    }
+
+    static bool IsValidCidr(string cidr)
+    {
+        try
+        {
+            IPNetwork.Parse(cidr);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     static string AggregateCIDRs(List<string> cidrs)
